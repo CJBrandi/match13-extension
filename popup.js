@@ -53,10 +53,19 @@ function setStatus(element, message = "", kind = "") {
 
 async function fetchViaBackground(url) {
   const parsedUrl = new URL(url);
-  const result = await browserApi.runtime.sendMessage({
-    type: "match13-api-request",
-    path: `${parsedUrl.pathname}${parsedUrl.search}`,
-  });
+  let result;
+  try {
+    result = await browserApi.runtime.sendMessage({
+      type: "match13-api-request",
+      path: `${parsedUrl.pathname}${parsedUrl.search}`,
+    });
+  } catch (error) {
+    throw new Match13ApiError({
+      status: 0,
+      title: "Background request error",
+      detail: error?.message || "Firefox could not contact the Match 13 request worker.",
+    });
+  }
   if (result?.ok) {
     return new Response(JSON.stringify(result.data), {
       status: 200,
@@ -66,11 +75,16 @@ async function fetchViaBackground(url) {
 
   const error = result?.error ?? {
     status: 0,
-    title: "Network error",
-    detail: "Could not reach actions.match13.com. Check your connection and try again.",
+    title: "Background request error",
+    detail: "Firefox could not contact the Match 13 request worker.",
   };
   if (!Number.isInteger(error.status) || error.status < 200 || error.status > 599) {
-    throw new Error(error.detail);
+    throw new Match13ApiError({
+      status: 0,
+      title: error.title,
+      detail: error.detail,
+      retryAfter: error.retryAfter ?? null,
+    });
   }
   const headers = { "Content-Type": "application/problem+json" };
   if (error.retryAfter !== null && error.retryAfter !== undefined) headers["Retry-After"] = String(error.retryAfter);

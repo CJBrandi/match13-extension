@@ -129,7 +129,8 @@ export class Match13Client {
     let response;
     try {
       response = await this.fetchImpl(`${this.baseUrl}${path}`, { headers });
-    } catch {
+    } catch (error) {
+      if (error instanceof Match13ApiError) throw error;
       throw new Match13ApiError({ status: 0, title: "Network error", detail: "Could not reach actions.match13.com. Check your connection and try again." });
     }
 
