@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>match13</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="brand-header">
+        <div>
+          <div class="brand-wordmark">match<span>13</span></div>
+          <p class="brand-subtitle">robotics numbers, made useful</p>
+        </div>
+        <button id="header-change-key" class="header-action" type="button" hidden>Change key</button>
+      </header>
+
+      <section id="setup-view" class="setup-card" aria-labelledby="setup-title">
+        <div id="key-setup">
+          <div class="eyebrow">FIRST START</div>
+          <h1 id="setup-title">Connect Match 13</h1>
+          <p class="muted">Get a key from your <a href="https://www.match13.com/account" target="_blank" rel="noreferrer">Match 13 account page</a>. Create an API key there, then paste it below; your key is stored only in Firefox and never committed to this repository.</p>
+          <form id="key-form" class="stack-form">
+            <label for="api-key-input">API key</label>
+            <div class="input-action-row">
+              <input id="api-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="m13_live_…" required>
+              <button class="primary-button" type="submit">Save key</button>
+            </div>
+          </form>
+        </div>
+        <div id="team-setup" hidden>
+          <div class="eyebrow">GET STARTED</div>
+          <h1>Pick a team to begin</h1>
+          <p class="muted">Your team selection is kept only while this popup is open.</p>
+          <form id="setup-form" class="stack-form">
+            <label for="setup-team">Team number</label>
+            <div class="input-action-row">
+              <input id="setup-team" inputmode="numeric" autocomplete="off" placeholder="e.g. 581" required>
+              <button class="primary-button" type="submit">Load team</button>
+            </div>
+          </form>
+          <button id="change-key" class="quiet-button change-key-button" type="button">Change API key</button>
+        </div>
+        <p id="setup-status" class="status" role="status"></p>
+      </section>
+
+      <section id="dashboard-view" class="dashboard" hidden>
+        <nav class="tab-bar" role="tablist" aria-label="match13 views">
+          <button id="stats-tab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="stats-panel">Team stats</button>
+          <button id="matches-tab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="matches-panel">Matches</button>
+        </nav>
+
+        <section id="stats-panel" role="tabpanel" aria-labelledby="stats-tab">
+          <div class="toolbar sticky-toolbar">
+            <form id="team-form" class="team-search" role="search">
+              <label class="sr-only" for="team-input">Switch team</label>
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="team-input" inputmode="numeric" autocomplete="off" aria-label="Switch team" placeholder="Switch team">
+              <button class="quiet-button" type="submit">Go</button>
+            </form>
+            <label class="year-control">
+              <span>Year</span>
+              <select id="year-select" aria-label="Season year"></select>
+            </label>
+          </div>
+          <p id="stats-status" class="status" role="status"></p>
+          <div id="stats-content"></div>
+        </section>
+
+        <section id="matches-panel" role="tabpanel" aria-labelledby="matches-tab" hidden>
+          <div class="toolbar sticky-toolbar match-toolbar">
+            <label class="event-select-control">
+              <span>Event</span>
+              <select id="event-select" aria-label="Select event">
+                <option value="">Choose an event</option>
+              </select>
+            </label>
+            <form id="event-key-form" class="event-key-form">
+              <label class="sr-only" for="event-key-input">Enter event key</label>
+              <input id="event-key-input" autocomplete="off" placeholder="or enter key">
+              <button class="quiet-button" type="submit">Load</button>
+            </form>
+          </div>
+          <p id="matches-status" class="status" role="status"></p>
+          <div id="matches-content"></div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
