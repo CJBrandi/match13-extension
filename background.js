@@ -26,13 +26,17 @@ function serialiseError(error) {
   };
 }
 
-browserApi.runtime.onMessage.addListener(async (message) => {
-  if (message?.type !== "match13-api-request" || typeof message.path !== "string") return undefined;
-
-  client.setApiKey(await storedApiKey());
+async function handleRequest(message) {
   try {
+    client.setApiKey(await storedApiKey());
     return { ok: true, data: await client.request(message.path) };
   } catch (error) {
     return { ok: false, error: serialiseError(error) };
   }
+}
+
+browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type !== "match13-api-request" || typeof message.path !== "string") return false;
+  handleRequest(message).then(sendResponse);
+  return true;
 });
