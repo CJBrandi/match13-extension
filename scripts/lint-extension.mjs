@@ -5,7 +5,18 @@ import { tmpdir } from "node:os";
 import lint from "../node_modules/web-ext/lib/cmd/lint.js";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const sourceFiles = ["manifest.json", "api.js", "background.js", "popup.css", "popup.html", "popup.js"];
+const sourceFiles = [
+  "manifest.json",
+  "api.js",
+  "popup.css",
+  "popup.html",
+  "popup.js",
+  "match13-logo.png",
+  "match13-icon-48.png",
+  "match13-icon-96.png",
+  "match13-icon-128.png",
+  "match13-wordmark.png",
+];
 const lintSource = await mkdtemp(join(tmpdir(), "match13-extension-lint-"));
 
 try {

@@ -21,6 +21,7 @@ const state = {
   teamEvents: null,
   selectedEventKey: "",
   eventMatches: null,
+  teamSuggestions: new Set(),
 };
 
 const $ = (id) => document.getElementById(id);
@@ -51,51 +52,11 @@ function setStatus(element, message = "", kind = "") {
   element.className = `status ${kind}`.trim();
 }
 
-async function fetchViaBackground(url) {
-  const parsedUrl = new URL(url);
-  let result;
-  try {
-    result = await browserApi.runtime.sendMessage({
-      type: "match13-api-request",
-      path: `${parsedUrl.pathname}${parsedUrl.search}`,
-    });
-  } catch (error) {
-    throw new Match13ApiError({
-      status: 0,
-      title: "Background request error",
-      detail: error?.message || "Firefox could not contact the Match 13 request worker.",
-    });
-  }
-  if (result?.ok) {
-    return new Response(JSON.stringify(result.data), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const error = result?.error ?? {
-    status: 0,
-    title: "Background request error",
-    detail: "Firefox could not contact the Match 13 request worker.",
-  };
-  if (!Number.isInteger(error.status) || error.status < 200 || error.status > 599) {
-    throw new Match13ApiError({
-      status: 0,
-      title: error.title,
-      detail: error.detail,
-      retryAfter: error.retryAfter ?? null,
-    });
-  }
-  const headers = { "Content-Type": "application/problem+json" };
-  if (error.retryAfter !== null && error.retryAfter !== undefined) headers["Retry-After"] = String(error.retryAfter);
-  return new Response(JSON.stringify(error), { status: error.status, headers });
-}
-
 function errorMessage(error) {
   if (!(error instanceof Match13ApiError)) {
     return "Something went wrong. Try again.";
   }
-  if (error.status === 401) return "That API key was rejected. Use Change API key to replace it.";
+  if (error.status === 401) return "The saved Match 13 API key was rejected.";
   if (error.status === 404) return "Match 13 has no data for that team, year, or event.";
   if (error.status === 422) return error.detail;
   if (error.status === 429) {
@@ -108,7 +69,6 @@ function errorMessage(error) {
 function showSetup() {
   $("setup-view").hidden = false;
   $("dashboard-view").hidden = true;
-  $("header-change-key").hidden = true;
   $("key-setup").hidden = Boolean(state.apiKey);
   $("team-setup").hidden = !state.apiKey;
   if (state.apiKey) $("setup-team").focus();
@@ -118,15 +78,29 @@ function showSetup() {
 function showDashboard() {
   $("setup-view").hidden = true;
   $("dashboard-view").hidden = false;
-  $("header-change-key").hidden = false;
   $("team-input").value = state.team;
   $("year-select").value = String(state.year);
+  renderTeamSuggestions();
   switchTab(state.activeTab);
 }
 
 function renderYearOptions() {
   $("year-select").innerHTML = supportedYears().map((year) => `<option value="${year}">${year}</option>`).join("");
   $("year-select").value = String(state.year);
+}
+
+function renderTeamSuggestions() {
+  $("team-suggestions").innerHTML = [...state.teamSuggestions]
+    .sort((left, right) => Number(left) - Number(right))
+    .map((team) => `<option value="${escapeHtml(team)}"></option>`)
+    .join("");
+}
+
+function rememberTeams(teams = {}) {
+  if (!teams || typeof teams !== "object") return;
+  Object.keys(teams).forEach((team) => state.teamSuggestions.add(team));
+  if (state.team) state.teamSuggestions.add(String(state.team));
+  renderTeamSuggestions();
 }
 
 function renderStatsLoading() {
@@ -218,6 +192,7 @@ function renderTeamRatings(teams = {}) {
 
 function renderMatches() {
   const matches = state.eventMatches?.matches ?? [];
+  matches.forEach((match) => rememberTeams(match.teams));
   if (!state.selectedEventKey) {
     $("matches-content").innerHTML = `<div class="empty-state">Choose an event above to browse Match 13 forecasts.</div>`;
     return;
@@ -283,6 +258,7 @@ async function loadTeam(team, year = state.year, { fromSetup = false } = {}) {
     ]);
     if (teamResult.status === "rejected") throw teamResult.reason;
     state.team = Number(cleanTeam);
+    state.teamSuggestions.add(String(state.team));
     state.year = Number(year);
     state.teamYear = teamResult.value;
     state.teamEvents = eventsResult.status === "fulfilled" ? eventsResult.value : { events: [] };
@@ -345,15 +321,6 @@ function wireEvents() {
     event.preventDefault();
     loadTeam($("setup-team").value, currentYear, { fromSetup: true });
   });
-  const beginKeyChange = () => {
-    state.apiKey = "";
-    state.client.setApiKey("");
-    $("api-key-input").value = "";
-    showSetup();
-    setStatus($("setup-status"), "Enter a replacement API key.", "loading");
-  };
-  $("change-key").addEventListener("click", beginKeyChange);
-  $("header-change-key").addEventListener("click", beginKeyChange);
   $("team-form").addEventListener("submit", (event) => {
     event.preventDefault();
     loadTeam($("team-input").value, state.year);
@@ -375,7 +342,7 @@ function wireEvents() {
 }
 
 async function init() {
-  state.client = new Match13Client({ fetchImpl: fetchViaBackground });
+  state.client = new Match13Client();
   renderYearOptions();
   wireEvents();
   showSetup();

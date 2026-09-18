@@ -47,9 +47,9 @@ body {
   width: 190px;
   height: 48px;
   border-radius: 999px;
-  opacity: 0.48;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.62));
-  box-shadow: 0 14px 24px rgba(56, 189, 248, 0.11);
+  opacity: 0.72;
+  background: linear-gradient(180deg, rgba(14, 116, 144, 0.7), rgba(2, 132, 199, 0.36));
+  box-shadow: 0 14px 24px rgba(14, 116, 144, 0.22);
   filter: blur(0.15px);
   will-change: transform;
 }
@@ -76,9 +76,9 @@ body {
 }
 
 .cloud--one { top: 9%; left: -220px; transform: scale(0.92); animation: cloud-drift-one 46s linear infinite; }
-.cloud--two { top: 31%; left: -260px; opacity: 0.32; transform: scale(0.66); animation: cloud-drift-two 58s linear 8s infinite; }
-.cloud--three { top: 57%; left: -230px; opacity: 0.24; transform: scale(0.78); animation: cloud-drift-three 64s linear 18s infinite; }
-.cloud--four { top: 78%; left: -260px; opacity: 0.2; transform: scale(0.55); animation: cloud-drift-four 52s linear 27s infinite; }
+.cloud--two { top: 31%; left: -260px; opacity: 0.52; transform: scale(0.66); animation: cloud-drift-two 58s linear 8s infinite; }
+.cloud--three { top: 57%; left: -230px; opacity: 0.42; transform: scale(0.78); animation: cloud-drift-three 64s linear 18s infinite; }
+.cloud--four { top: 78%; left: -260px; opacity: 0.36; transform: scale(0.55); animation: cloud-drift-four 52s linear 27s infinite; }
 
 @keyframes cloud-drift-one {
   from { translate: -10vw 0; }
@@ -116,12 +116,21 @@ button, a { -webkit-tap-highlight-color: transparent; }
 a { color: var(--sky); }
 
 .app-shell { position: relative; z-index: 1; padding: 18px; }
-.brand-header { display: flex; align-items: flex-start; justify-content: space-between; margin: 2px 2px 14px; }
-.brand-wordmark { color: #0f172a; font-size: 25px; font-weight: 850; letter-spacing: -0.08em; line-height: 1; }
-.brand-wordmark span { color: var(--sky); }
-.brand-subtitle { margin: 5px 0 0; color: #5b7186; font-size: 11px; letter-spacing: 0.025em; }
-.header-action { border: 0; border-radius: 999px; padding: 7px 10px; color: #075985; font-size: 10px; font-weight: 800; background: rgba(255, 255, 255, 0.58); }
-.header-action:hover { background: white; }
+.brand-header { margin: 0 2px 14px; }
+.brand-link { display: inline-block; color: inherit; text-decoration: none; }
+.brand-wordmark-image {
+  display: block;
+  width: 217px;
+  height: 67px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.26);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.brand-link:hover .brand-wordmark-image,
+.brand-link:focus-visible .brand-wordmark-image {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.34);
+}
 .icon-link { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid rgba(2, 132, 199, 0.18); border-radius: 50%; color: #41667c; text-decoration: none; background: rgba(255, 255, 255, 0.52); }
 .icon-link:hover { color: var(--sky); background: white; }
 
@@ -132,7 +141,6 @@ h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 7px; font-size: 25px; letter-spacing: -0.045em; }
 .muted, .setup-help { color: var(--muted); font-size: 13px; line-height: 1.45; }
 .setup-help { margin: 17px 0 0; font-size: 12px; }
-.change-key-button { margin-top: 16px; }
 .stack-form { display: grid; gap: 8px; margin-top: 24px; }
 label { color: #475569; font-size: 11px; font-weight: 750; }
 .input-action-row { display: flex; gap: 8px; }
@@ -158,7 +166,8 @@ button { cursor: pointer; }
 .tab-button:hover { background: rgba(224, 242, 254, 0.75); }
 .tab-button.active { color: #075985; background: rgba(186, 230, 253, 0.72); box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18); }
 [role="tabpanel"] { padding: 0 14px 16px; }
-.toolbar { display: flex; align-items: center; gap: 9px; padding: 13px 0 11px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.55); }
+.toolbar { display: flex; align-items: center; gap: 9px; padding: 13px 14px 11px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.55); }
+.dashboard-toolbar { position: sticky; top: 0; z-index: 6; border-radius: 20px 20px 0 0; }
 .sticky-toolbar { position: sticky; top: 0; z-index: 5; }
 .team-search { display: flex; flex: 1; align-items: center; gap: 5px; border: 1px solid rgba(100, 116, 139, 0.25); border-radius: 10px; padding-left: 8px; background: rgba(255, 255, 255, 0.86); }
 .team-search input { border: 0; padding: 8px 4px; background: transparent; box-shadow: none; }
