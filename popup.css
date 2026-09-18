@@ -22,11 +22,78 @@ body {
   min-width: 520px;
   min-height: 520px;
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     radial-gradient(circle at 88% 2%, rgba(255, 255, 255, 0.96) 0 9%, transparent 22%),
     radial-gradient(circle at 10% 18%, rgba(255, 255, 255, 0.65) 0 13%, transparent 28%),
     linear-gradient(145deg, #dff5ff 0%, #f7fcff 43%, #bae6fd 100%);
+}
+
+.cloud-field {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  width: 190px;
+  height: 48px;
+  border-radius: 999px;
+  opacity: 0.48;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.62));
+  box-shadow: 0 14px 24px rgba(56, 189, 248, 0.11);
+  filter: blur(0.15px);
+  will-change: transform;
+}
+
+.cloud::before, .cloud::after {
+  position: absolute;
+  content: "";
+  border-radius: 50%;
+  background: inherit;
+}
+
+.cloud::before {
+  width: 82px;
+  height: 82px;
+  left: 28px;
+  bottom: 12px;
+}
+
+.cloud::after {
+  width: 66px;
+  height: 66px;
+  right: 34px;
+  bottom: 8px;
+}
+
+.cloud--one { top: 9%; left: -220px; transform: scale(0.92); animation: cloud-drift-one 46s linear infinite; }
+.cloud--two { top: 31%; left: -260px; opacity: 0.32; transform: scale(0.66); animation: cloud-drift-two 58s linear 8s infinite; }
+.cloud--three { top: 57%; left: -230px; opacity: 0.24; transform: scale(0.78); animation: cloud-drift-three 64s linear 18s infinite; }
+.cloud--four { top: 78%; left: -260px; opacity: 0.2; transform: scale(0.55); animation: cloud-drift-four 52s linear 27s infinite; }
+
+@keyframes cloud-drift-one {
+  from { translate: -10vw 0; }
+  to { translate: 125vw 0; }
+}
+
+@keyframes cloud-drift-two {
+  from { translate: -15vw 0; }
+  to { translate: 135vw 0; }
+}
+
+@keyframes cloud-drift-three {
+  from { translate: -20vw 0; }
+  to { translate: 140vw 0; }
+}
+
+@keyframes cloud-drift-four {
+  from { translate: -12vw 0; }
+  to { translate: 130vw 0; }
 }
 
 body::before {
@@ -44,7 +111,7 @@ button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: var(--sky); }
 
-.app-shell { position: relative; padding: 18px; }
+.app-shell { position: relative; z-index: 1; padding: 18px; }
 .brand-header { display: flex; align-items: flex-start; justify-content: space-between; margin: 2px 2px 14px; }
 .brand-wordmark { color: #0f172a; font-size: 25px; font-weight: 850; letter-spacing: -0.08em; line-height: 1; }
 .brand-wordmark span { color: var(--sky); }
@@ -145,4 +212,9 @@ details summary { cursor: pointer; color: #64748b; font-size: 10px; font-weight:
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .match-toolbar { align-items: stretch; flex-direction: column; }
   .event-key-form { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud { animation: none; }
+  .skeleton { animation: none; }
 }
