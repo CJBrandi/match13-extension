@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "match13 Extension",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A compact Firefox dashboard for Match 13 team statistics and match forecasts.",
   "homepage_url": "https://github.com/CJBrandi/match13-extension",
   "browser_specific_settings": {
@@ -17,14 +17,12 @@
     "https://actions.match13.com/*"
   ],
   "icons": {
-    "48": "match13-icon-48.png",
-    "96": "match13-icon-96.png",
-    "128": "match13-icon-128.png"
+    "192": "assets/icon.png"
   },
   "action": {
     "default_title": "match13",
     "default_icon": {
-      "48": "match13-icon-48.png"
+      "192": "assets/icon.png"
     },
     "default_popup": "popup.html"
   }

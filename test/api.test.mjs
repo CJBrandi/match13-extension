@@ -93,3 +93,37 @@ test("rejects missing keys before making a network request", async () => {
   await assert.rejects(client.getTeamYear(581, 2026), (error) => error.status === 0 && error.title === "API key required");
   assert.equal(called, false);
 });
+
+test("keeps body retry-after when header is absent", async () => {
+  const client = new Match13Client({ apiKey: "m13_test", fetchImpl: async () => response({ retryAfter: 17 }, { status: 429 }) });
+  await assert.rejects(client.getTeamYear(581, 2026), e => e.retryAfter === 17);
+});
+
+test("explains timeouts and network failures", async () => {
+  for (const [name, message] of [["TimeoutError", /15 seconds/], ["TypeError", /Firefox API access/]]) {
+    const client = new Match13Client({ apiKey: "m13_test", fetchImpl: async () => { throw Object.assign(new Error(), { name }); } });
+    await assert.rejects(client.getTeamYear(581, 2026), e => e instanceof Match13ApiError && message.test(e.detail));
+  }
+});
+
+test("preserves actionable permission errors", async () => {
+  const { extensionFetch } = await import("../connection.js");
+  let called = false;
+  const client = new Match13Client({ apiKey: "m13_test", fetchImpl: extensionFetch({ permissions: { contains: async () => false }, storage: { local: {} } }, async () => { called = true; }) });
+  await assert.rejects(client.getTeamYear(581, 2026), e => e.title === "API access required");
+  assert.equal(called, false);
+});
+
+test("permits requests only with the exact API host permission", async () => {
+  const { extensionFetch, API_ACCESS } = await import("../connection.js");
+  let called = false;
+  const fetch = extensionFetch({ permissions: { contains: async access => { assert.deepEqual(access, API_ACCESS); return true; } }, storage: { local: {} } }, async () => { called = true; return response({ xp: 42 }); });
+  const client = new Match13Client({ apiKey: "m13_test", fetchImpl: fetch });
+  assert.equal((await client.getTeamYear(581, 2026)).xp, 42);
+  assert.equal(called, true);
+});
+
+test("explains why a regular webpage cannot call the API", async () => {
+  const { requireApiAccess } = await import("../connection.js");
+  await assert.rejects(requireApiAccess(undefined), e => /about:debugging/.test(e.detail));
+});

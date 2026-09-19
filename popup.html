@@ -7,29 +7,24 @@
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <div class="cloud-field" aria-hidden="true">
-      <span class="cloud cloud--one"></span>
-      <span class="cloud cloud--two"></span>
-      <span class="cloud cloud--three"></span>
-      <span class="cloud cloud--four"></span>
-    </div>
     <main class="app-shell">
       <header class="brand-header">
         <a class="brand-link" href="https://www.match13.com/" target="_blank" rel="noreferrer" aria-label="Open Match 13 website">
-          <img class="brand-wordmark-image" src="match13-wordmark.png" alt="Match 13">
+          <img class="brand-wordmark-image" src="assets/wordmark.svg" alt="Match 13">
         </a>
+        <button id="connection-button" class="quiet-button" type="button">Connection</button>
       </header>
 
       <section id="setup-view" class="setup-card" aria-labelledby="setup-title">
         <div id="key-setup">
-          <div class="eyebrow">FIRST START</div>
+          <div class="eyebrow">YOUR FRC COMPANION</div>
           <h1 id="setup-title">Connect Match 13</h1>
           <p class="muted">Create an API key on your <a href="https://www.match13.com/account" target="_blank" rel="noreferrer">Match 13 account page</a>. Paste it below to connect this extension.</p>
           <form id="key-form" class="stack-form">
             <label for="api-key-input">API key</label>
             <div class="input-action-row">
               <input id="api-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="m13_live_…" required>
-              <button class="primary-button" type="submit">Save key</button>
+              <button class="primary-button" type="submit">Connect</button>
             </div>
           </form>
         </div>
@@ -44,6 +39,8 @@
             </div>
           </form>
         </div>
+        <button id="permission-button" class="quiet-button" type="button" hidden>Allow API access</button>
+        <button id="back-button" class="quiet-button" type="button" hidden>Back to dashboard</button>
         <p id="setup-status" class="status" role="status"></p>
       </section>
 
@@ -52,7 +49,7 @@
           <form id="team-form" class="team-search" role="search">
             <label class="sr-only" for="team-input">Search</label>
             <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="team-input" type="search" inputmode="numeric" autocomplete="on" list="team-suggestions" aria-label="Search" placeholder="Search">
+            <input id="team-input" type="search" inputmode="numeric" autocomplete="on" list="team-suggestions" aria-label="Search" placeholder="Team number">
             <datalist id="team-suggestions"></datalist>
             <button class="quiet-button" type="submit">Go</button>
           </form>

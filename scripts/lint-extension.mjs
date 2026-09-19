@@ -8,19 +8,16 @@ const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const sourceFiles = [
   "manifest.json",
   "api.js",
+  "connection.js",
   "popup.css",
   "popup.html",
   "popup.js",
-  "match13-logo.png",
-  "match13-icon-48.png",
-  "match13-icon-96.png",
-  "match13-icon-128.png",
-  "match13-wordmark.png",
+  "assets",
 ];
 const lintSource = await mkdtemp(join(tmpdir(), "match13-extension-lint-"));
 
 try {
-  await Promise.all(sourceFiles.map((file) => cp(join(projectRoot, file), join(lintSource, file))));
+  await Promise.all(sourceFiles.map((file) => cp(join(projectRoot, file), join(lintSource, file), { recursive: true })));
 
   const result = await lint({
     sourceDir: lintSource,

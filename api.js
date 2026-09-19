@@ -76,7 +76,7 @@ async function readProblem(response) {
   }
 
   const retryHeader = response.headers?.get("Retry-After");
-  const retryAfter = Number.isFinite(Number(retryHeader)) ? Number(retryHeader) : problem.retryAfter ?? null;
+  const retryAfter = retryHeader !== null && retryHeader !== undefined && Number.isFinite(Number(retryHeader)) ? Number(retryHeader) : problem.retryAfter ?? null;
   return new Match13ApiError({
     status: response.status,
     title: problem.title || response.statusText || "Request failed",
@@ -86,7 +86,8 @@ async function readProblem(response) {
 }
 
 export class Match13Client {
-  constructor({ apiKey = "", fetchImpl = globalThis.fetch, baseUrl = API_BASE_URL } = {}) {
+  constructor({ apiKey = "", fetchImpl = globalThis.fetch, baseUrl = API_BASE_URL, timeoutMs = 15000 } = {}) {
+    this.timeoutMs = timeoutMs;
     this.apiKey = apiKey.trim();
     this.fetchImpl = fetchImpl;
     this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -128,10 +129,13 @@ export class Match13Client {
 
     let response;
     try {
-      response = await this.fetchImpl(`${this.baseUrl}${path}`, { headers });
+      response = await this.fetchImpl(`${this.baseUrl}${path}`, { headers, signal: AbortSignal.timeout(this.timeoutMs) });
     } catch (error) {
       if (error instanceof Match13ApiError) throw error;
-      throw new Match13ApiError({ status: 0, title: "Network error", detail: "Could not reach actions.match13.com. Check your connection and try again." });
+      const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError";
+      throw new Match13ApiError({ status: 0, title: timedOut ? "Request timed out" : "Network error", detail: timedOut
+        ? "Match 13 did not respond within 15 seconds. Try again shortly."
+        : "Could not reach actions.match13.com. Open Connection to check Firefox API access. If access is allowed, check your connection, VPN or firewall and try again." });
     }
 
     if (response.status === 304 && cached) {

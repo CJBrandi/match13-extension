@@ -1,3 +1,4 @@
+import { API_ACCESS, extensionFetch } from "./connection.js";
 import {
   Match13ApiError,
   Match13Client,
@@ -24,6 +25,9 @@ const state = {
   teamSuggestions: new Set(),
 };
 
+let teamRequest = 0;
+let matchRequest = 0;
+
 const $ = (id) => document.getElementById(id);
 
 function escapeHtml(value) {
@@ -36,15 +40,15 @@ function escapeHtml(value) {
 }
 
 function numeric(value, digits = 1) {
-  return Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : "—";
+  return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : "—";
 }
 
 function percent(value, digits = 0) {
-  return Number.isFinite(Number(value)) ? `${(Number(value) * 100).toFixed(digits)}%` : "—";
+  return value != null && value !== "" && Number.isFinite(Number(value)) ? `${(Number(value) * 100).toFixed(digits)}%` : "—";
 }
 
 function percentile(value) {
-  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}th` : "—";
+  return value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value).toFixed(1) : "—";
 }
 
 function setStatus(element, message = "", kind = "") {
@@ -56,22 +60,23 @@ function errorMessage(error) {
   if (!(error instanceof Match13ApiError)) {
     return "Something went wrong. Try again.";
   }
-  if (error.status === 401) return "The saved Match 13 API key was rejected.";
+  if (error.status === 401) return "The saved Match 13 API key was rejected. Open Connection to replace it with a current key from your account page.";
   if (error.status === 404) return "Match 13 has no data for that team, year, or event.";
   if (error.status === 422) return error.detail;
   if (error.status === 429) {
-    const wait = Number.isFinite(Number(error.retryAfter)) ? ` Try again in ${error.retryAfter} seconds.` : " Wait a moment, then try again.";
+    const wait = error.retryAfter != null && Number.isFinite(Number(error.retryAfter)) ? ` Try again in ${error.retryAfter} seconds.` : " Wait a moment, then try again.";
     return `Match 13 rate limit reached.${wait}`;
   }
   return error.detail;
 }
 
-function showSetup() {
+function showSetup({ editKey = false } = {}) {
   $("setup-view").hidden = false;
   $("dashboard-view").hidden = true;
-  $("key-setup").hidden = Boolean(state.apiKey);
-  $("team-setup").hidden = !state.apiKey;
-  if (state.apiKey) $("setup-team").focus();
+  $("key-setup").hidden = Boolean(state.apiKey) && !editKey;
+  $("team-setup").hidden = !state.apiKey || editKey;
+  $("back-button").hidden = !state.teamYear;
+  if (state.apiKey && !editKey) $("setup-team").focus();
   else $("api-key-input").focus();
 }
 
@@ -128,6 +133,8 @@ function renderStats() {
     ["RP 2", percent(data.xRp2)],
     ["RP 3", percent(data.xRp3)],
     ["Norm xP", numeric(data.normXp)],
+    ["OPR", numeric(data.opr)],
+    ["DPR", numeric(data.dpr)],
   ];
 
   const events = state.teamEvents?.events ?? [];
@@ -222,15 +229,20 @@ async function loadMatches(eventKey) {
     setStatus($("matches-status"), "Enter an event key like 2026casj.", "error");
     return;
   }
-  state.selectedEventKey = eventKey.trim();
+  const request = ++matchRequest;
+  const selectedKey = eventKey.trim();
+  state.selectedEventKey = selectedKey;
   $("event-select").value = state.selectedEventKey;
   setStatus($("matches-status"), "Loading forecasts…", "loading");
   $("matches-content").innerHTML = `<div class="skeleton" style="height: 190px; margin-top: 16px"></div>`;
   try {
-    state.eventMatches = await state.client.getEventMatches(state.selectedEventKey);
+    const data = await state.client.getEventMatches(selectedKey);
+    if (request !== matchRequest) return;
+    state.eventMatches = data;
     setStatus($("matches-status"));
     renderMatches();
   } catch (error) {
+    if (request !== matchRequest) return;
     state.eventMatches = null;
     setStatus($("matches-status"), errorMessage(error), "error");
     $("matches-content").innerHTML = `<div class="empty-state">Could not load ${escapeHtml(state.selectedEventKey)}.</div>`;
@@ -248,6 +260,7 @@ async function loadTeam(team, year = state.year, { fromSetup = false } = {}) {
     return;
   }
 
+  const request = ++teamRequest;
   const statusElement = fromSetup ? $("setup-status") : $("stats-status");
   setStatus(statusElement, `Loading team ${cleanTeam}…`, "loading");
   if (!fromSetup) renderStatsLoading();
@@ -256,13 +269,17 @@ async function loadTeam(team, year = state.year, { fromSetup = false } = {}) {
       state.client.getTeamYear(Number(cleanTeam), Number(year)),
       state.client.getTeamEvents(Number(cleanTeam), Number(year)),
     ]);
+    if (request !== teamRequest) return;
     if (teamResult.status === "rejected") throw teamResult.reason;
     state.team = Number(cleanTeam);
     state.teamSuggestions.add(String(state.team));
     state.year = Number(year);
     state.teamYear = teamResult.value;
     state.teamEvents = eventsResult.status === "fulfilled" ? eventsResult.value : { events: [] };
+    ++matchRequest;
     state.selectedEventKey = "";
+    $("event-key-input").value = "";
+    setStatus($("matches-status"));
     state.eventMatches = null;
     setStatus(statusElement);
     showDashboard();
@@ -272,6 +289,8 @@ async function loadTeam(team, year = state.year, { fromSetup = false } = {}) {
       setStatus($("stats-status"), `Team stats loaded. Event history unavailable: ${errorMessage(eventsResult.reason)}`, "error");
     }
   } catch (error) {
+    if (request !== teamRequest) return;
+    $("year-select").value = String(state.year);
     setStatus(statusElement, errorMessage(error), "error");
     if (!fromSetup) {
       state.teamYear = null;
@@ -302,7 +321,27 @@ async function loadStoredKey() {
   return typeof stored[KEY_STORAGE_NAME] === "string" ? stored[KEY_STORAGE_NAME].trim() : "";
 }
 
+async function refreshPermission() {
+  const granted = await browserApi?.permissions?.contains(API_ACCESS);
+  $("permission-button").hidden = Boolean(granted);
+  if (!granted) setStatus($("setup-status"), "Allow Firefox access to the Match 13 API to connect.", "error");
+}
+
 function wireEvents() {
+  $("connection-button").addEventListener("click", () => {
+    showSetup({ editKey: true });
+    setStatus($("setup-status"), "Your key stays in Firefox on this device. Enter a new key to replace it.");
+    refreshPermission();
+  });
+  $("back-button").addEventListener("click", showDashboard);
+  $("permission-button").addEventListener("click", async () => {
+    try {
+      if (!browserApi?.permissions) throw new Error("Load manifest.json in Firefox about:debugging first.");
+      const granted = await browserApi.permissions.request(API_ACCESS);
+      $("permission-button").hidden = granted;
+      setStatus($("setup-status"), granted ? "API access allowed. You can now connect or load your team." : "API access was declined. Allow access to connect.", granted ? "success" : "error");
+    } catch (error) { setStatus($("setup-status"), error.message, "error"); }
+  });
   $("key-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const apiKey = $("api-key-input").value.trim();
@@ -310,9 +349,25 @@ function wireEvents() {
       setStatus($("setup-status"), "Enter a Match 13 key beginning with m13_.", "error");
       return;
     }
-    await browserApi.storage.local.set({ [KEY_STORAGE_NAME]: apiKey });
+    try {
+      if (!browserApi?.permissions) throw new Error("Open this popup as a Firefox extension, not a regular web page.");
+      const granted = await browserApi.permissions.request(API_ACCESS);
+      if (!granted) throw new Error("API access was not granted. Click Allow API access to connect.");
+      await browserApi.storage.local.set({ [KEY_STORAGE_NAME]: apiKey });
+    } catch (error) {
+      setStatus($("setup-status"), error.message, "error");
+      $("permission-button").hidden = false;
+      return;
+    }
     state.apiKey = apiKey;
-    state.client.setApiKey(apiKey);
+    ++teamRequest;
+    ++matchRequest;
+    state.teamYear = null;
+    state.teamEvents = null;
+    state.eventMatches = null;
+    state.selectedEventKey = "";
+    state.client = new Match13Client({ apiKey, fetchImpl: extensionFetch(browserApi) });
+    $("permission-button").hidden = true;
     $("api-key-input").value = "";
     setStatus($("setup-status"));
     showSetup();
@@ -326,14 +381,14 @@ function wireEvents() {
     loadTeam($("team-input").value, state.year);
   });
   $("year-select").addEventListener("change", () => {
-    state.year = Number($("year-select").value);
-    loadTeam(state.team, state.year);
+    loadTeam(state.team, Number($("year-select").value));
   });
   $("stats-tab").addEventListener("click", () => switchTab("stats"));
   $("matches-tab").addEventListener("click", () => switchTab("matches"));
   $("event-select").addEventListener("change", () => {
     const eventKey = $("event-select").value;
     if (eventKey) loadMatches(eventKey);
+    else { ++matchRequest; state.selectedEventKey = ""; state.eventMatches = null; setStatus($("matches-status")); renderMatches(); }
   });
   $("event-key-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -342,13 +397,14 @@ function wireEvents() {
 }
 
 async function init() {
-  state.client = new Match13Client();
+  state.client = new Match13Client({ fetchImpl: extensionFetch(browserApi) });
   renderYearOptions();
   wireEvents();
   showSetup();
+  await refreshPermission();
   state.apiKey = await loadStoredKey();
   state.client.setApiKey(state.apiKey);
   showSetup();
 }
 
-init();
+init().catch(() => setStatus($("setup-status"), "Could not read extension settings. Reload the extension in Firefox and try again.", "error"));

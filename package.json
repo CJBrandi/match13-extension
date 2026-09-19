@@ -1,6 +1,6 @@
 {
   "name": "match13-extension",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Firefox Manifest V3 extension for Match 13 team stats and match forecasts.",
   "type": "module",
@@ -10,6 +10,7 @@
     "build": "web-ext build --source-dir . --artifacts-dir dist --overwrite-dest --ignore-files 'node_modules' --ignore-files 'test' --ignore-files 'dist' --ignore-files 'outputs' --ignore-files 'work' --ignore-files 'scripts' --ignore-files 'package.json' --ignore-files 'package-lock.json' --ignore-files 'README.md'"
   },
   "devDependencies": {
+    "jsdom": "^26.1.0",
     "web-ext": "^8.9.0"
   }
 }
